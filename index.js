@@ -4,8 +4,8 @@ const os = require('os');
 // Replace with your Telegram bot token
 const token = '7541625467:AAF6eiXRCK97Csj_n44-YRWXHtSmm9W7JpQ';
 
-// Create a bot that uses 'polling' to fetch new updates
-const bot = new TelegramBot(token, { polling: true });
+// Create a bot using webhook mode
+const bot = new TelegramBot(token);
 
 // Function to perform a simple performance test
 const performanceTest = () => {
@@ -35,13 +35,20 @@ const performanceTest = () => {
     return `Performance Test Completed!\nPrimes Calculated: ${primes.length}\nTime Taken: ${duration} ms\nCPU Cores: ${os.cpus().length}\nFree Memory: ${(os.freemem() / (1024 * 1024)).toFixed(2)} MB\nTotal Memory: ${(os.totalmem() / (1024 * 1024)).toFixed(2)} MB`;
 };
 
-// Listen for any kind of message
-bot.on('message', (msg) => {
-    const chatId = msg.chat.id;
+// Handle incoming webhook requests
+module.exports = (req, res) => {
+    if (req.method === 'POST') {
+        const update = req.body;
 
-    // Perform the performance test
-    const result = performanceTest();
+        // Process the update
+        const chatId = update.message.chat.id;
+        const result = performanceTest();
 
-    // Send the result back to the user
-    bot.sendMessage(chatId, result);
-});
+        // Send the result back to the user
+        bot.sendMessage(chatId, result);
+
+        res.status(200).send('OK');
+    } else {
+        res.status(404).send('Not Found');
+    }
+};
