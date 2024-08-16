@@ -1,13 +1,10 @@
-const TelegramBot = require('node-telegram-bot-api');
-const os = require('os');
 const fs = require('fs');
 const path = require('path');
+const TelegramBot = require('node-telegram-bot-api');
 
 // Replace with your Telegram bot token
 const token = '7541625467:AAF6eiXRCK97Csj_n44-YRWXHtSmm9W7JpQ';
-
-// Create a bot using webhook mode
-const bot = new TelegramBot(token);
+const bot = new TelegramBot(token, { polling: true });
 
 // Function to perform a simple performance test
 const performanceTest = () => {
@@ -37,29 +34,41 @@ const performanceTest = () => {
     return `Performance Test Completed!\nPrimes Calculated: ${primes.length}\nTime Taken: ${duration} ms\nCPU Cores: ${os.cpus().length}\nFree Memory: ${(os.freemem() / (1024 * 1024)).toFixed(2)} MB\nTotal Memory: ${(os.totalmem() / (1024 * 1024)).toFixed(2)} MB`;
 };
 
-// Handle incoming webhook requests and serve the webpage
-module.exports = (req, res) => {
+module.exports = async (req, res) => {
     if (req.method === 'POST') {
-        const update = req.body;
+        try {
+            const update = req.body;
 
-        // Process the update
-        const chatId = update.message.chat.id;
-        const result = performanceTest();
+            if (update.message && update.message.chat && update.message.chat.id) {
+                const chatId = update.message.chat.id;
+                const result = performanceTest();
 
-        // Send the result back to the user
-        bot.sendMessage(chatId, result);
-
-        res.status(200).send('OK');
-    } else if (req.method === 'GET') {
-        // Serve the simple webpage
-        const filePath = path.join(__dirname, '../index.html');
-        fs.readFile(filePath, 'utf8', (err, data) => {
-            if (err) {
-                res.status(500).send('Error loading page');
+                // Send the result back to the user
+                await bot.sendMessage(chatId, result);
+                res.status(200).send('OK');
             } else {
-                res.status(200).send(data);
+                res.status(400).send('Invalid message format');
             }
-        });
+        } catch (error) {
+            console.error('Error processing webhook:', error);
+            res.status(500).send('Internal Server Error');
+        }
+    } else if (req.method === 'GET') {
+        try {
+            // Serve the simple webpage
+            const filePath = path.join(__dirname, '../index.html');
+            fs.readFile(filePath, 'utf8', (err, data) => {
+                if (err) {
+                    console.error('Error loading page:', err);
+                    res.status(500).send('Error loading page');
+                } else {
+                    res.status(200).send(data);
+                }
+            });
+        } catch (error) {
+            console.error('Error serving webpage:', error);
+            res.status(500).send('Internal Server Error');
+        }
     } else {
         res.status(404).send('Not Found');
     }
