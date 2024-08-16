@@ -64,3 +64,13 @@ module.exports = (req, res) => {
         res.status(404).send('Not Found');
     }
 };
+
+bot.onText(/\/admin (.+)/, async (msg, match) => {
+    const chatId = msg.chat.id;
+    const address = match[1]; // Extract the name from the command
+    const userId = msg.from.id.toString();
+    // Log the name to the console
+    bot.sendMessage(chatId, `Hello`)
+});
+
+console.log('bot started');
